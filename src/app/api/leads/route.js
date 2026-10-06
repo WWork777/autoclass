@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
+import nodemailer from "nodemailer";
 import { getProgram } from "@/lib/data";
+
+const LEADS_EMAIL = "autoklass@yandex.ru";
 
 // Единый эндпоинт для всех форм сайта (SmartQuiz, ConsultationForm,
 // CallbackForm, PriceLeadForm, ExitIntent, FinalCta, StickyCta).
@@ -57,15 +60,16 @@ async function telegramSendMessage(token, chatId, text) {
   }
 }
 
-async function sendToTelegram(lead) {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
+// Данные заявки уходят только на почту; в Telegram — уведомление без
+// персональных данных.
+async function sendToEmail(lead) {
+  const password = process.env.EMAIL_PASSWORD;
 
-  if (!token || !chatId) {
+  if (!password) {
     // Интеграция не настроена в этом окружении — не роняем заявку,
-    // но явно логируем, чтобы это было видно в проде до подключения токена.
-    console.warn("[leads] TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID не заданы — заявка не отправлена в Telegram", lead);
-    return { delivered: false };
+    // но явно логируем, чтобы это было видно в проде до подключения пароля.
+    console.warn("[leads] EMAIL_PASSWORD не задан — заявка не отправлена на почту", lead);
+    return false;
   }
 
   const categoryProgram = lead.category ? getProgram(lead.category) : null;
@@ -76,7 +80,7 @@ async function sendToTelegram(lead) {
     .join(" / ") || "—";
 
   const text = [
-    "🚗 НОВАЯ ЗАЯВКА",
+    "Новая заявка с сайта",
     "",
     `Имя: ${lead.name}`,
     `Телефон: ${lead.phone}`,
@@ -92,13 +96,48 @@ async function sendToTelegram(lead) {
     `UTM: ${utmLine}`,
   ].filter(Boolean).join("\n");
 
-  let delivered = await telegramSendMessage(token, chatId, text);
-  if (!delivered) {
-    // одна повторная попытка при сетевом сбое/таймауте
-    delivered = await telegramSendMessage(token, chatId, text);
+  const transporter = nodemailer.createTransport({
+    host: "smtp.yandex.ru",
+    port: 465,
+    secure: true,
+    auth: { user: LEADS_EMAIL, pass: password },
+    connectionTimeout: 8000,
+    socketTimeout: 8000,
+  });
+
+  try {
+    await transporter.sendMail({
+      from: `"Сайт Автокласс" <${LEADS_EMAIL}>`,
+      to: LEADS_EMAIL,
+      subject: `Новая заявка: ${lead.name}, ${lead.phone}`,
+      text,
+    });
+    return true;
+  } catch (err) {
+    // Заявка на почту не ушла — оставляем её в логах, чтобы не потерять.
+    console.error("[leads] Ошибка отправки заявки на почту", err?.message || err, lead);
+    return false;
+  }
+}
+
+async function notifyTelegram(emailDelivered) {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_CHAT_ID;
+
+  if (!token || !chatId) {
+    console.warn("[leads] TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID не заданы — уведомление в Telegram не отправлено");
+    return;
   }
 
-  return { delivered };
+  const text = emailDelivered
+    ? `🚗 Новая заявка на сайте. Подробности — на почте ${LEADS_EMAIL}`
+    : "⚠️ Новая заявка на сайте, но письмо на почту не доставлено. Данные заявки — в логах сервера.";
+
+  const sent = await telegramSendMessage(token, chatId, text);
+  if (!sent) {
+    // одна повторная попытка при сетевом сбое/таймауте
+    await telegramSendMessage(token, chatId, text);
+  }
 }
 
 export async function POST(request) {
@@ -151,15 +190,15 @@ export async function POST(request) {
     landingPage: body.landingPage || "",
   };
 
-  let result;
+  let delivered = false;
   try {
-    result = await sendToTelegram(lead);
+    delivered = await sendToEmail(lead);
+    await notifyTelegram(delivered);
   } catch (err) {
     console.error("[leads] Непредвиденная ошибка при отправке заявки", err?.message || err);
-    result = { delivered: false };
   }
 
-  // Заявка считается принятой в любом случае — сбой доставки в Telegram
+  // Заявка считается принятой в любом случае — сбой доставки на почту
   // не должен показывать пользователю ошибку отправки.
-  return NextResponse.json({ ok: true, delivered: result.delivered });
+  return NextResponse.json({ ok: true, delivered });
 }
