@@ -7,7 +7,12 @@ export function digitsOnly(value) {
 
 // Приводит любой ввод к 10 цифрам после кода страны (без 7/8 в начале)
 function toNationalDigits(raw) {
-  let d = digitsOnly(raw);
+  // Если raw — уже отрисованное значение поля (обычный набор, не вставка),
+  // оно начинается с нашего же префикса "+7 ". Если не убрать его перед
+  // подсчётом цифр, "7" из префикса на каждом нажатии ошибочно считается
+  // частью номера и ломает маску (цифры съезжают).
+  const withoutDisplayPrefix = (raw || "").replace(/^\+7\s*/, "");
+  let d = digitsOnly(withoutDisplayPrefix);
   if (d.startsWith("8") && d.length === 11) d = "7" + d.slice(1);
   if (d.startsWith("7") && d.length === 11) d = d.slice(1);
   if (d.length > 10) d = d.slice(-10);
