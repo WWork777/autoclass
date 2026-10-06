@@ -123,7 +123,7 @@ async function sendToEmail(lead) {
   }
 }
 
-async function notifyTelegram(emailDelivered) {
+async function notifyTelegram(lead, emailDelivered) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
 
@@ -132,9 +132,21 @@ async function notifyTelegram(emailDelivered) {
     return;
   }
 
-  const text = emailDelivered
+  const utmLine = [lead.utm_source, lead.utm_medium, lead.utm_campaign]
+    .filter(Boolean)
+    .join(" / ") || "—";
+
+  const statusLine = emailDelivered
     ? `🚗 Новая заявка на сайте. Подробности — на почте ${LEADS_EMAIL}`
     : "⚠️ Новая заявка на сайте, но письмо на почту не доставлено. Данные заявки — в логах сервера.";
+
+  const text = [
+    statusLine,
+    "",
+    `Страница: ${lead.landingPage || "—"}`,
+    `Источник: ${lead.source || "—"}`,
+    `UTM: ${utmLine}`,
+  ].join("\n");
 
   const sent = await telegramSendMessage(token, chatId, text);
   if (!sent) {
@@ -196,7 +208,7 @@ export async function POST(request) {
   let delivered = false;
   try {
     delivered = await sendToEmail(lead);
-    await notifyTelegram(delivered);
+    await notifyTelegram(lead, delivered);
   } catch (err) {
     console.error("[leads] Непредвиденная ошибка при отправке заявки", err?.message || err);
   }
