@@ -4,6 +4,10 @@ import { getProgram } from "@/lib/data";
 
 const LEADS_EMAIL = "autoklass@yandex.ru";
 
+// Прямое соединение с api.telegram.org с этого сервера часто рвётся по
+// таймауту/ENETUNREACH — используем проксирующий Cloudflare Worker.
+const TELEGRAM_API_BASE = "https://tg-proxy.parsikovevgenij470.workers.dev";
+
 // Единый эндпоинт для всех форм сайта (SmartQuiz, ConsultationForm,
 // CallbackForm, PriceLeadForm, ExitIntent, FinalCta, StickyCta).
 // Никакой другой формы/роута для заявок в проекте быть не должно.
@@ -41,7 +45,7 @@ async function telegramSendMessage(token, chatId, text) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 8000);
   try {
-    const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    const res = await fetch(`${TELEGRAM_API_BASE}/bot${token}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ chat_id: chatId, text }),
