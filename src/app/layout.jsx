@@ -6,6 +6,7 @@ import StickyCta from "@/components/leads/StickyCta";
 import ExitIntent from "@/components/leads/ExitIntent";
 import CookieBanner from "@/components/CookieBanner";
 import AccessibilityWidget from "@/components/AccessibilityWidget";
+import YandexMetrika from "@/components/YandexMetrika";
 
 const oswald = Oswald({
   subsets: ["latin", "cyrillic"],
@@ -79,6 +80,7 @@ export default function RootLayout({ children }) {
           <CookieBanner />
           <AccessibilityWidget />
         </LeadModalProvider>
+        <YandexMetrika />
       </body>
     </html>
   );
