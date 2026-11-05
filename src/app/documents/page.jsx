@@ -15,6 +15,7 @@ export const metadata = buildMetadata({
 
 const POLICIES = [
   { href: "/docs/privacy-policy.pdf", label: "Политика конфиденциальности" },
+  { href: "/docs/pd-policy.pdf", label: "Политика в отношении обработки персональных данных" },
   { href: "/docs/cookie-policy.pdf", label: "Политика использования cookie" },
   { href: "/docs/user-agreement.pdf", label: "Пользовательское соглашение" },
 ];

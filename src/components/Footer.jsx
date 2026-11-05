@@ -75,6 +75,7 @@ export default function Footer() {
           <Link href="/documents/" className="hover:text-line transition-colors">Сведения об организации</Link>
           <Link href="/privacy/" className="hover:text-line transition-colors">Политика конфиденциальности</Link>
           <Link href="/cookies/" className="hover:text-line transition-colors">Политика cookie</Link>
+          <a href="/docs/pd-policy.pdf" target="_blank" rel="noopener noreferrer" className="hover:text-line transition-colors">Политика обработки ПД</a>
           <Link href="/agreement/" className="hover:text-line transition-colors">Пользовательское соглашение</Link>
         </div>
       </div>

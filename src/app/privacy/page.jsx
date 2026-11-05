@@ -55,9 +55,18 @@ export default function PrivacyPage() {
               <a href={`mailto:${SITE.email}`} className="text-blue hover:text-line transition-colors">{SITE.email}</a>.
             </p>
             <p>
-              Полный текст политики обработки персональных данных доступен для скачивания:{" "}
+              Полный текст политики конфиденциальности:{" "}
               <a
                 href="/docs/privacy-policy.pdf"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue hover:text-line transition-colors underline underline-offset-2"
+              >
+                скачать PDF
+              </a>
+              {" "}· политика в отношении обработки персональных данных:{" "}
+              <a
+                href="/docs/pd-policy.pdf"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-blue hover:text-line transition-colors underline underline-offset-2"
